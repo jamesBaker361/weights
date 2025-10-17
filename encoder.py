@@ -75,7 +75,7 @@ def main(args):
     )
 
 
-    data_tensor=torch.load(file_path)
+    data_tensor=torch.load(file_path,map_location="cpu")
 
 
 if __name__=='__main__':
