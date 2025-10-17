@@ -42,7 +42,7 @@ class PCADataset(Dataset):
     
     def __getitem__(self, index):
         row = self.label_df.iloc[index]  # or df.loc['some_index']
-        cols_with_one = row[row == 1].index.tolist()
+        cols_with_one = "".join(row[row == 1].index.tolist())
         return { "weights": self.data_tensor[index],
                     "labels":cols_with_one
                      }
