@@ -48,7 +48,7 @@ class PCADataset(Dataset):
                      }
         
 if __name__=="__main__":
-    data=PCADataset()
+    data=DataLoader(PCADataset(),batch_size=1)
     for row in data:
         break
     print(row)
