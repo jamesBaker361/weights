@@ -165,7 +165,7 @@ def main(args):
             with accelerator.accumulate(params):
                 batch=batch.unsqueeze(1)
                 batch=batch.to(torch_dtype,device)
-                t=torch.randint(0,len(scheduler),(len(batch)))
+                t=torch.randint(0,len(scheduler),(len(batch)),device=device).long()
                 noise=torch.randn_like(batch)
 
                 noised=scheduler.add_noise(batch,noise,t)
