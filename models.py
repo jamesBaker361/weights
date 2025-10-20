@@ -5,13 +5,13 @@ class LinearEncoder(Module):
     def __init__(self,n_layers:int
                  ,embedding_dim:int,
                  input_dim:int, 
-                 residual:bool,
+               #  residual:bool,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_layers=n_layers
         self.embedding_dim=embedding_dim
         step=(input_dim-embedding_dim)/self.n_layers
-        self.residual=residual
+        #self.residual=residual
         dim_list=[input_dim]
         self.down_block_list=ModuleList([Linear(input_dim - (step*k),input_dim-(step*(k+1))) for k in range(n_layers)])
         self.down_attention_list=ModuleList([MultiheadAttention(input_dim-(step*(k+1)),1) for k in range(n_layers)])
