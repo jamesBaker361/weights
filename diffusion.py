@@ -46,6 +46,8 @@ parser.add_argument("--mode",type=str,default="pca",help="pca or vae")
 parser.add_argument("--denoiser",type=str,default="linear")
 parser.add_argument("--embedding_dim_internal",type=int,default=1024)
 parser.add_argument("--n_layers",type=int,default=2)
+parser.add_argument("--epochs",type=int,default=100)
+parser.add_argument("--limit",type=int,default=-1)
 
 
 def main(args):
