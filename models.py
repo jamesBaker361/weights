@@ -13,13 +13,17 @@ class LinearEncoder(Module):
         step=(input_dim-embedding_dim)/self.n_layers
         #self.residual=residual
         dim_list=[input_dim]
-        self.down_block_list=ModuleList([Linear(input_dim - (step*k),input_dim-(step*(k+1))) for k in range(n_layers)])
-        self.down_attention_list=ModuleList([MultiheadAttention(input_dim-(step*(k+1)),1) for k in range(n_layers)])
-        self.down_time_emb_list=ModuleList([Linear(1, input_dim-(step*(k+1))) for k in range(n_layers)])
+        self.down_block_list=ModuleList([
+            Linear(int(input_dim - (step*k)),int(input_dim-(step*(k+1))))
+              for k in range(n_layers)])
+        self.down_attention_list=ModuleList([MultiheadAttention(int(input_dim-(step*(k+1))),1) for k in range(n_layers)])
+        self.down_time_emb_list=ModuleList([Linear(1, int(input_dim-(step*(k+1)))) for k in range(n_layers)])
 
-        self.up_block_list=ModuleList([Linear(embedding_dim + (step*k),embedding_dim+(step*(k+1))) for k in range(n_layers)])
-        self.up_attention_list=ModuleList([MultiheadAttention(embedding_dim+(step*(k+1)),1) for k in range(n_layers)])
-        self.up_time_emb_list=ModuleList([Linear(1, embedding_dim+(step*(k+1))) for k in range(n_layers)])
+        self.up_block_list=ModuleList([
+            Linear(int(embedding_dim + (step*k)),int(embedding_dim+(step*(k+1))))
+              for k in range(n_layers)])
+        self.up_attention_list=ModuleList([MultiheadAttention(int(embedding_dim+(step*(k+1))),1) for k in range(n_layers)])
+        self.up_time_emb_list=ModuleList([Linear(1, int(embedding_dim+(step*(k+1)))) for k in range(n_layers)])
         self.droput=Dropout1d()
 
     def forward(self,x,t):
