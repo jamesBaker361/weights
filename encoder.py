@@ -4,6 +4,7 @@ from experiment_helpers.gpu_details import print_details
 from datasets import load_dataset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from data_helpers import WeightsDataset
 import json
 
 import torch
@@ -23,6 +24,7 @@ from diffusers import LCMScheduler,DiffusionPipeline,DEISMultistepScheduler,DDIM
 from diffusers.models.attention_processor import IPAdapterAttnProcessor2_0
 from torchvision.transforms.v2 import functional as F_v2
 from torchmetrics.image.fid import FrechetInceptionDistance
+from data_helpers import WeightsDataset
 
 from transformers import AutoProcessor, CLIPModel
 try:
@@ -38,6 +40,9 @@ parser.add_argument("--project_name",type=str,default="person")
 parser.add_argument("--gradient_accumulation_steps",type=int,default=4)
 parser.add_argument("--name",type=str,default="jlbaker361/model",help="name on hf")
 parser.add_argument("--lr",type=float,default=0.0001)
+parser.add_argument("--epochs",type=int,default=100)
+parser.add_argument("--limit",type=int,default=-1)
+parser.add_argument("--filename",type=str,default="weights_datasets/identities/all_weights.pt")
 
 def main(args):
     accelerator=Accelerator(log_with="wandb",mixed_precision=args.mixed_precision,gradient_accumulation_steps=args.gradient_accumulation_steps)
@@ -68,14 +73,27 @@ def main(args):
         "bf16":torch.bfloat16
     }[args.mixed_precision]
 
-    file_path = hf_hub_download(
-    repo_id="snap-research/weights2weights",
-    filename="weights_datasets/identities/all_weights.pt",   # <-- include the subfolder path here
-    repo_type="model"               # or "dataset" if it's a dataset repo
-    )
+    dataset=WeightsDataset(args.filename)
+    test_size=args.batch_size
+    train_size=len(dataset)-test_size
 
+    
+    # Set seed for reproducibility
+    generator = torch.Generator().manual_seed(42)
 
-    data_tensor=torch.load(file_path,map_location="cpu")
+    # Split the dataset
+    train_dataset, test_dataset = random_split(dataset, [train_size, test_size], generator=generator)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
+
+    save_subdir=os.path.join(args.save_dir,args.name)
+    os.makedirs(save_subdir,exist_ok=True)
+
+    WEIGHTS_NAME="diffusion_pytorch_model.safetensors"
+    CONFIG_NAME="config.json"
+    
+    save_path=os.path.join(save_subdir,WEIGHTS_NAME)
+    config_path=os.path.join(save_subdir,CONFIG_NAME)
 
 
 if __name__=='__main__':

@@ -15,12 +15,12 @@ from huggingface_hub import hf_hub_download
 import numpy as np
 import torch.nn.functional as F
 
-class PCADataset(Dataset):
-    def __init__(self):
+class WeightsDataset(Dataset):
+    def __init__(self,filename:str="files/proj_1000pc.pt"):
         super().__init__()
         file_path = hf_hub_download(
         repo_id="snap-research/weights2weights",
-        filename="files/proj_1000pc.pt",   # <-- include the subfolder path here
+        filename=filename,   # <-- include the subfolder path here
         repo_type="model"               # or "dataset" if it's a dataset repo
         )
 
@@ -48,7 +48,7 @@ class PCADataset(Dataset):
                      }
         
 if __name__=="__main__":
-    data=DataLoader(PCADataset(),batch_size=1)
+    data=DataLoader(WeightsDataset(),batch_size=1)
     for row in data:
         break
     print(row)

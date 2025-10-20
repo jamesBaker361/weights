@@ -22,7 +22,7 @@ from diffusers import LCMScheduler,DiffusionPipeline,DEISMultistepScheduler,DDIM
 from diffusers.models.attention_processor import IPAdapterAttnProcessor2_0
 from torchvision.transforms.v2 import functional as F_v2
 from torchmetrics.image.fid import FrechetInceptionDistance
-from data_helpers import PCADataset
+from data_helpers import WeightsDataset
 from torch.utils.data import random_split, DataLoader
 from models import LinearEncoder
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
@@ -48,6 +48,7 @@ parser.add_argument("--embedding_dim_internal",type=int,default=1024)
 parser.add_argument("--n_layers",type=int,default=2)
 parser.add_argument("--epochs",type=int,default=100)
 parser.add_argument("--limit",type=int,default=-1)
+parser.add_argument("--batch_size",type=int,default=4)
 
 
 def main(args):
@@ -80,7 +81,7 @@ def main(args):
     }[args.mixed_precision]
 
     if args.mode=="pca":
-        dataset=PCADataset()
+        dataset=WeightsDataset()
         
 
     test_size=args.batch_size
