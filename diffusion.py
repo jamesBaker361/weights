@@ -49,6 +49,7 @@ parser.add_argument("--n_layers",type=int,default=2)
 parser.add_argument("--epochs",type=int,default=100)
 parser.add_argument("--limit",type=int,default=-1)
 parser.add_argument("--batch_size",type=int,default=4)
+parser.add_argument("--save_dir",type=str,default="weights")
 
 
 def main(args):

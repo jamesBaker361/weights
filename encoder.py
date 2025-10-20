@@ -43,6 +43,7 @@ parser.add_argument("--lr",type=float,default=0.0001)
 parser.add_argument("--epochs",type=int,default=100)
 parser.add_argument("--limit",type=int,default=-1)
 parser.add_argument("--filename",type=str,default="weights_datasets/identities/all_weights.pt")
+parser.add_argument("--save_dir",type=str,default="weights")
 
 def main(args):
     accelerator=Accelerator(log_with="wandb",mixed_precision=args.mixed_precision,gradient_accumulation_steps=args.gradient_accumulation_steps)
