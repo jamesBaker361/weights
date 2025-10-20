@@ -197,6 +197,7 @@ def main(args):
         })
         end=time.time()
         accelerator.print(f"epoch {e} elapsed {end-start} seconds ")
+        save(denoiser.state_dict(),e)
 
 
 
