@@ -55,155 +55,156 @@ parser.add_argument("--load_hf",action="store_true")
 
 def main(args):
     accelerator=Accelerator(log_with="wandb",mixed_precision=args.mixed_precision,gradient_accumulation_steps=args.gradient_accumulation_steps)
-    print("accelerator device",accelerator.device)
-    device=accelerator.device
-    state = PartialState()
-    print(f"Rank {state.process_index} initialized successfully")
-    if accelerator.is_main_process or state.num_processes==1:
-        accelerator.print(f"main process = {state.process_index}")
-    if accelerator.is_main_process or state.num_processes==1:
-        try:
-            accelerator.init_trackers(project_name=args.project_name,config=vars(args))
+    with accelerator.autocast():
+        accelerator.print("accelerator device",accelerator.device)
+        device=accelerator.device
+        state = PartialState()
+        accelerator.print(f"Rank {state.process_index} initialized successfully")
+        if accelerator.is_main_process or state.num_processes==1:
+            accelerator.print(f"main process = {state.process_index}")
+        if accelerator.is_main_process or state.num_processes==1:
+            try:
+                accelerator.init_trackers(project_name=args.project_name,config=vars(args))
 
-            api=HfApi()
-            api.create_repo(args.name,exist_ok=True)
-        except HfHubHTTPError:
-            print("hf hub error!")
-            time.sleep(random.randint(5,120))
-            accelerator.init_trackers(project_name=args.project_name,config=vars(args))
+                api=HfApi()
+                api.create_repo(args.name,exist_ok=True)
+            except HfHubHTTPError:
+                accelerator.print("hf hub error!")
+                time.sleep(random.randint(5,120))
+                accelerator.init_trackers(project_name=args.project_name,config=vars(args))
 
-            api=HfApi()
-            api.create_repo(args.name,exist_ok=True)
+                api=HfApi()
+                api.create_repo(args.name,exist_ok=True)
 
 
-    torch_dtype={
-        "no":torch.float32,
-        "fp16":torch.float16,
-        "bf16":torch.bfloat16
-    }[args.mixed_precision]
+        torch_dtype={
+            "no":torch.float32,
+            "fp16":torch.float16,
+            "bf16":torch.bfloat16
+        }[args.mixed_precision]
 
-    if args.mode=="pca":
-        dataset=WeightsDataset()
+        if args.mode=="pca":
+            dataset=WeightsDataset()
+            
+
+        test_size=args.batch_size
+        train_size=len(dataset)-test_size
+
         
+        # Set seed for reproducibility
+        generator = torch.Generator().manual_seed(42)
 
-    test_size=args.batch_size
-    train_size=len(dataset)-test_size
+        # Split the dataset
+        train_dataset, test_dataset = random_split(dataset, [train_size, test_size], generator=generator)
 
-    
-    # Set seed for reproducibility
-    generator = torch.Generator().manual_seed(42)
+        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
-    # Split the dataset
-    train_dataset, test_dataset = random_split(dataset, [train_size, test_size], generator=generator)
+        save_subdir=os.path.join(args.save_dir,args.name)
+        os.makedirs(save_subdir,exist_ok=True)
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
-
-    save_subdir=os.path.join(args.save_dir,args.name)
-    os.makedirs(save_subdir,exist_ok=True)
-
-    WEIGHTS_NAME="diffusion_pytorch_model.safetensors"
-    CONFIG_NAME="config.json"
-    
-    save_path=os.path.join(save_subdir,WEIGHTS_NAME)
-    config_path=os.path.join(save_subdir,CONFIG_NAME)
+        WEIGHTS_NAME="diffusion_pytorch_model.safetensors"
+        CONFIG_NAME="config.json"
+        
+        save_path=os.path.join(save_subdir,WEIGHTS_NAME)
+        config_path=os.path.join(save_subdir,CONFIG_NAME)
 
 
-    for batch in train_loader:
-        break
+        for batch in train_loader:
+            break
 
-    input_dim=batch["weights"].size()[-1]
+        input_dim=batch["weights"].size()[-1]
 
-    if args.denoiser=="linear":
-        denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
+        if args.denoiser=="linear":
+            denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
 
-    params=[p for p in denoiser.parameters()]
-    optimizer=torch.optim.AdamW(params,args.lr)
-    scheduler=DDIMScheduler()
+        params=[p for p in denoiser.parameters()]
+        optimizer=torch.optim.AdamW(params,args.lr)
+        scheduler=DDIMScheduler()
 
-    denoiser,optimizer,train_loader,test_loader,scheduler= accelerator.prepare(denoiser,optimizer,train_loader,test_loader,scheduler)
+        denoiser,optimizer,train_loader,test_loader,scheduler= accelerator.prepare(denoiser,optimizer,train_loader,test_loader,scheduler)
 
-    start_epoch=1
-    try:
-        if args.load_hf:
-            pretrained_weights_path=api.hf_hub_download(args.name,WEIGHTS_NAME,force_download=True)
-            pretrained_config_path=api.hf_hub_download(args.name,CONFIG_NAME,force_download=True)
-            denoiser.load_state_dict(torch.load(pretrained_weights_path,weights_only=True),strict=False)
-            with open(pretrained_config_path,"r") as f:
-                data=json.load(f)
-            start_epoch=data["start_epoch"]+1
-    except Exception as e:
-        accelerator.print(e)
-
-    state_dict=denoiser.state_dict()
-
-
-    def save(state_dict:dict,e:int):
-        #state_dict=???
-        print("state dict len",len(state_dict))
-        torch.save(state_dict,save_path)
-        with open(config_path,"w+") as config_file:
-            data={"start_epoch":e}
-            json.dump(data,config_file, indent=4)
-            pad = " " * 2048  # ~1KB of padding
-            config_file.write(pad)
-        print(f"saved {save_path}")
+        start_epoch=1
         try:
-            api.upload_file(path_or_fileobj=save_path,
-                                    path_in_repo=WEIGHTS_NAME,
-                                    repo_id=args.name)
-            api.upload_file(path_or_fileobj=config_path,path_in_repo=CONFIG_NAME,
-                                    repo_id=args.name)
-            print(f"uploaded {args.name} to hub")
+            if args.load_hf:
+                pretrained_weights_path=api.hf_hub_download(args.name,WEIGHTS_NAME,force_download=True)
+                pretrained_config_path=api.hf_hub_download(args.name,CONFIG_NAME,force_download=True)
+                denoiser.load_state_dict(torch.load(pretrained_weights_path,weights_only=True),strict=False)
+                with open(pretrained_config_path,"r") as f:
+                    data=json.load(f)
+                start_epoch=data["start_epoch"]+1
         except Exception as e:
-            accelerator.print("failed to upload")
             accelerator.print(e)
 
-    for e in range(start_epoch,args.epochs+1):
-        start=time.time()
-        loss_buffer=[]
-        train_loss=0.0
-        for b,batch in enumerate(train_loader):
-            if b==args.limit:
-                break
+        state_dict=denoiser.state_dict()
 
-            with accelerator.accumulate(params):
-                
-                batch=batch["weights"].to(device,torch_dtype)
-                batch=batch.unsqueeze(1)
-                t=torch.randint(0,len(scheduler),(len(batch),),device=device) #.long()
-                noise=torch.randn_like(batch)
 
-                noised=scheduler.add_noise(batch,noise,t)
+        def save(state_dict:dict,e:int):
+            #state_dict=???
+            print("state dict len",len(state_dict))
+            torch.save(state_dict,save_path)
+            with open(config_path,"w+") as config_file:
+                data={"start_epoch":e}
+                json.dump(data,config_file, indent=4)
+                pad = " " * 2048  # ~1KB of padding
+                config_file.write(pad)
+            print(f"saved {save_path}")
+            try:
+                api.upload_file(path_or_fileobj=save_path,
+                                        path_in_repo=WEIGHTS_NAME,
+                                        repo_id=args.name)
+                api.upload_file(path_or_fileobj=config_path,path_in_repo=CONFIG_NAME,
+                                        repo_id=args.name)
+                print(f"uploaded {args.name} to hub")
+            except Exception as e:
+                accelerator.print("failed to upload")
+                accelerator.print(e)
 
-                predicted=denoiser(noised,t)
+        for e in range(start_epoch,args.epochs+1):
+            start=time.time()
+            loss_buffer=[]
+            train_loss=0.0
+            for b,batch in enumerate(train_loader):
+                if b==args.limit:
+                    break
 
-                loss=F.mse_loss(batch.float(),predicted.float())
+                with accelerator.accumulate(params):
+                    
+                    batch=batch["weights"].to(device,torch_dtype)
+                    batch=batch.unsqueeze(1)
+                    t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+                    noise=torch.randn_like(batch)
 
-                avg_loss = accelerator.gather(loss.repeat(args.train_batch_size)).mean()
-                train_loss += avg_loss.item() / args.gradient_accumulation_steps
+                    noised=scheduler.add_noise(batch,noise,t)
 
-                loss_buffer.append(loss.detach().cpu().detach())
+                    predicted=denoiser(noised,t)
 
-                accelerator.backward(loss)
-                '''if accelerator.sync_gradients:
-                    params_to_clip = lora_layers
-                    accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)'''
-                optimizer.step()
-                #lr_scheduler.step()
-                optimizer.zero_grad()
+                    loss=F.mse_loss(batch.float(),predicted.float())
 
-            if accelerator.sync_gradients:
-                accelerator.log({"train_loss": train_loss},)
-                train_loss = 0.0
+                    avg_loss = accelerator.gather(loss.repeat(args.train_batch_size)).mean()
+                    train_loss += avg_loss.item() / args.gradient_accumulation_steps
 
-                
-        accelerator.log({
-            "avg_loss":np.mean(loss_buffer)
-        })
-        end=time.time()
-        accelerator.print(f"epoch {e} elapsed {end-start} seconds ")
-        save(denoiser.state_dict(),e)
+                    loss_buffer.append(loss.detach().cpu().detach())
+
+                    accelerator.backward(loss)
+                    '''if accelerator.sync_gradients:
+                        params_to_clip = lora_layers
+                        accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)'''
+                    optimizer.step()
+                    #lr_scheduler.step()
+                    optimizer.zero_grad()
+
+                if accelerator.sync_gradients:
+                    accelerator.log({"train_loss": train_loss},)
+                    train_loss = 0.0
+
+                    
+            accelerator.log({
+                "avg_loss":np.mean(loss_buffer)
+            })
+            end=time.time()
+            accelerator.print(f"epoch {e} elapsed {end-start} seconds ")
+            save(denoiser.state_dict(),e)
 
 
 
