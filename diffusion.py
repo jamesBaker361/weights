@@ -170,7 +170,7 @@ def main(args):
                 
                 batch=batch["weights"].to(device,torch_dtype)
                 batch=batch.unsqueeze(1)
-                t=torch.randint(0,len(scheduler),(len(batch)),device=device).long()
+                t=torch.randint(0,len(scheduler),(len(batch),),device=device).long()
                 noise=torch.randn_like(batch)
 
                 noised=scheduler.add_noise(batch,noise,t)
