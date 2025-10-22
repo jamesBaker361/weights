@@ -179,7 +179,7 @@ def main(args):
 
                     accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
 
-                    predicted=denoiser(noised,t)
+                    predicted=denoiser(noised,t.unsqueeze(-1))
 
                     loss=F.mse_loss(batch.float(),predicted.float())
 
