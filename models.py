@@ -31,7 +31,7 @@ class LinearEncoder(Module):
         for layer,attention,time_emb in zip(self.down_block_list,self.down_attention_list, self.down_time_emb_list):
             x=layer(x)
             x=self.droput(x)
-            x=torch.nn.LeakyReLU(x)
+            x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t)
             x=attention(x,_t,_t)
 
@@ -39,7 +39,7 @@ class LinearEncoder(Module):
         for layer,attention,time_emb in zip(self.up_block_list,self.up_attention_list,self.up_time_emb_list):
             x=layer(x)
             #x=self.droput(x)
-            x=torch.nn.LeakyReLU()
+            x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t)
             x=attention(x,_t,_t)
 
