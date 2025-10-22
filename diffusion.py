@@ -177,6 +177,8 @@ def main(args):
 
                     noised=scheduler.add_noise(batch,noise,t.long())
 
+                    accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
+
                     predicted=denoiser(noised,t)
 
                     loss=F.mse_loss(batch.float(),predicted.float())
