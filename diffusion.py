@@ -175,7 +175,7 @@ def main(args):
                     t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
                     noise=torch.randn_like(batch)
 
-                    noised=scheduler.add_noise(batch,noise,t)
+                    noised=scheduler.add_noise(batch,noise,t.long())
 
                     predicted=denoiser(noised,t)
 
