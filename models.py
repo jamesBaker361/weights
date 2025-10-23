@@ -32,7 +32,7 @@ class LinearEncoder(Module):
             x=layer(x)
             x=self.droput(x)
             x=torch.nn.LeakyReLU()(x)
-            _t=time_emb(t)
+            _t=time_emb(t).unsqueeze(1)
             x=attention(x,_t,_t)
 
 
@@ -40,7 +40,7 @@ class LinearEncoder(Module):
             x=layer(x)
             #x=self.droput(x)
             x=torch.nn.LeakyReLU()(x)
-            _t=time_emb(t)
+            _t=time_emb(t).unsqueeze(1)
             x=attention(x,_t,_t)
 
         return x
