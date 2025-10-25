@@ -341,7 +341,7 @@ class LoRAw2w(nn.Module):
         for lora in self.unet_loras:
             lora.multiplier = 0
             
-def load_models(path:str)->tuple:
+def load_models(path:str,device)->tuple:
     pipe=DiffusionPipeline.from_pretrained(path).to(device)
     return pipe.unet.to(device), pipe.vae.to(device), pipe.text_encoder.to(device), pipe.tokenizer,pipe.scheduler
             
