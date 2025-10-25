@@ -309,6 +309,6 @@ if __name__=="__main__":
                            filename="files/V.pt")
     v = torch.load(v_path)
     #proj = torch.load("../files/proj_1000pc.pt")
-    proj=[np.random.normal()]*1000
+    proj=torch.tensor([np.random.normal()]*1000)
     unet=DiffusionPipeline.from_pretrained("SimianLuo/LCM_Dreamshaper_v7").unet
     LoRAw2w(proj,v,unet)
