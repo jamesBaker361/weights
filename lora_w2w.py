@@ -8,7 +8,7 @@ from typing import Optional, List, Type, Set, Literal
 
 import torch
 import torch.nn as nn
-from diffusers import UNet2DConditionModel
+from diffusers import UNet2DConditionModel,DiffusionPipeline
 from safetensors.torch import save_file
 import numpy as np
 import datasets
@@ -310,3 +310,5 @@ if __name__=="__main__":
     v = torch.load(v_path)
     #proj = torch.load("../files/proj_1000pc.pt")
     proj=[np.random.normal()]*1000
+    unet=DiffusionPipeline.from_pretrained("SimianLuo/LCM_Dreamshaper_v7").unet
+    LoRAw2w(proj,v,unet)
