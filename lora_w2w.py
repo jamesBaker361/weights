@@ -354,7 +354,7 @@ if __name__=="__main__":
     path="SimianLuo/LCM_Dreamshaper_v7"
     unet=DiffusionPipeline.from_pretrained(path).unet
     network=LoRAw2w(proj,v,unet)
-    unet, vae, text_encoder, tokenizer,scheduler =load_models(path)
+    
     
     prompt = "sks person" 
     negative_prompt = "low quality, blurry, unfinished, cartoon" 
@@ -364,9 +364,10 @@ if __name__=="__main__":
     guidance_scale = 3.0
     seed = 5
     ddim_steps = 10
-    device=device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # random seed generator
     generator = torch.Generator(device=device)
+    unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device)
     
     
 
