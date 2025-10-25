@@ -183,7 +183,7 @@ def main(args):
 
                     loss=F.mse_loss(batch.float(),predicted.float())
 
-                    avg_loss = accelerator.gather(loss.repeat(args.train_batch_size)).mean()
+                    avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
                     train_loss += avg_loss.item() / args.gradient_accumulation_steps
 
                     loss_buffer.append(loss.detach().cpu().detach())
