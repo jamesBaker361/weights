@@ -107,13 +107,16 @@ class LoRAModule(nn.Module):
 
 ### basic inference to generate images conditioned on text prompts
 @torch.no_grad
-def inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale, noise_scheduler, ddim_steps, seed, generator, device):
+def inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale,
+              noise_scheduler, ddim_steps, seed, generator,
+              dtype,
+              device):
     generator = generator.manual_seed(seed)
     latents = torch.randn(
         (1, unet.in_channels, 512 // 8, 512 // 8),
         generator = generator,
         device = device
-    ).bfloat16()
+    ).to(dtype)
    
 
     text_input = tokenizer(prompt, padding="max_length", max_length=tokenizer.model_max_length, truncation=True, return_tensors="pt")
@@ -341,9 +344,9 @@ class LoRAw2w(nn.Module):
         for lora in self.unet_loras:
             lora.multiplier = 0
             
-def load_models(path:str,device)->tuple:
-    pipe=DiffusionPipeline.from_pretrained(path).to(device)
-    return pipe.unet.to(device), pipe.vae.to(device), pipe.text_encoder.to(device), pipe.tokenizer,pipe.scheduler
+def load_models(path:str,device,dtype)->tuple:
+    pipe=DiffusionPipeline.from_pretrained(path).to(device,dtype)
+    return pipe.unet.to(device,dtype), pipe.vae.to(device,dtype), pipe.text_encoder.to(device,dtype), pipe.tokenizer,pipe.scheduler
             
 if __name__=="__main__":
     v_path=hf_hub_download("snap-research/weights2weights",
@@ -367,12 +370,14 @@ if __name__=="__main__":
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # random seed generator
     generator = torch.Generator(device=device)
-    unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device)
+    dtype=torch.float16
+    unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device,dtype)
     
     
 
     #run inference
-    image = inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device)
+    image = inference(network, unet, vae, text_encoder, tokenizer, prompt,
+                      negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,dtype)
 
     ### display image
     image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
