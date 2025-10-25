@@ -51,6 +51,7 @@ parser.add_argument("--limit",type=int,default=-1)
 parser.add_argument("--batch_size",type=int,default=4)
 parser.add_argument("--save_dir",type=str,default="weights")
 parser.add_argument("--load_hf",action="store_true")
+parser.add_argument("--val_interval",type=int,default=20)
 
 
 def main(args):
@@ -87,18 +88,19 @@ def main(args):
             dataset=WeightsDataset()
             
 
-        test_size=args.batch_size
-        train_size=len(dataset)-test_size
+        test_size=len(dataset)*0.1
+        train_size=len(dataset)-(test_size *2)
 
         
         # Set seed for reproducibility
         generator = torch.Generator().manual_seed(42)
 
         # Split the dataset
-        train_dataset, test_dataset = random_split(dataset, [train_size, test_size], generator=generator)
+        train_dataset, test_dataset,val_dataset = random_split(dataset, [train_size, test_size,test_size], generator=generator)
 
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
+        val_loader=DataLoader(val_dataset,batch_size=args.batch_size, shuffle=True)
 
         save_subdir=os.path.join(args.save_dir,args.name)
         os.makedirs(save_subdir,exist_ok=True)
@@ -177,7 +179,7 @@ def main(args):
 
                     noised=scheduler.add_noise(batch,noise,t.long())
 
-                    accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
+                    #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
 
                     predicted=denoiser(noised,t.unsqueeze(-1))
 
@@ -207,8 +209,74 @@ def main(args):
             end=time.time()
             accelerator.print(f"epoch {e} elapsed {end-start} seconds ")
             save(denoiser.state_dict(),e)
+            
+            if e%args.val_interval==0:
+                train_loss=0.0
+                loss_buffer=[]
+                start=time.time()
+                with torch.no_grad():
+                    for b,batch in enumerate(val_loader):
+                        batch=batch["weights"].to(device,torch_dtype)
+                        batch=batch.unsqueeze(1)
+                        t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+                        noise=torch.randn_like(batch)
 
+                        noised=scheduler.add_noise(batch,noise,t.long())
 
+                        #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
+
+                        predicted=denoiser(noised,t.unsqueeze(-1))
+
+                        loss=F.mse_loss(batch.float(),predicted.float())
+
+                        avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
+                        train_loss += avg_loss.item() 
+
+                        loss_buffer.append(loss.detach().cpu().detach())
+                        
+                        accelerator.log({"val_loss": train_loss},)
+                        
+                    accelerator.log({
+                        "avg_val_loss":np.mean(loss_buffer)
+                    })
+                    end=time.time()
+                    accelerator.print(f"validation epoch {e} elapsed {end-start} seconds ")
+                        
+                        
+
+        #test loop
+        with torch.no_grad():
+            test_loss=0.0
+            loss_buffer=[]
+            start=time.time()
+            for b,batch in enumerate(val_loader):
+                batch=batch["weights"].to(device,torch_dtype)
+                batch=batch.unsqueeze(1)
+                t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+                noise=torch.randn_like(batch)
+
+                noised=scheduler.add_noise(batch,noise,t.long())
+
+                #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
+
+                predicted=denoiser(noised,t.unsqueeze(-1))
+
+                loss=F.mse_loss(batch.float(),predicted.float())
+
+                avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
+                test_loss += avg_loss.item() 
+
+                loss_buffer.append(loss.detach().cpu().detach())
+                
+                accelerator.log({"test_loss": test_loss},)
+                
+            accelerator.log({
+                "avg_test_loss":np.mean(loss_buffer)
+            })
+            end=time.time()
+            accelerator.print(f"test epoch elapsed {end-start} seconds ")
+            
+        
 
 
 
