@@ -109,8 +109,7 @@ class LoRAModule(nn.Module):
 @torch.no_grad
 def inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale,
               noise_scheduler, ddim_steps, seed, generator,
-              dtype,
-              device):
+              device,dtype):
     generator = generator.manual_seed(seed)
     latents = torch.randn(
         (1, unet.in_channels, 512 // 8, 512 // 8),
