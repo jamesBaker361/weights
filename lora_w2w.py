@@ -5,6 +5,7 @@
 import os
 import math
 from typing import Optional, List, Type, Set, Literal
+import tqdm
 
 import torch
 import torch.nn as nn
@@ -13,6 +14,7 @@ from safetensors.torch import save_file
 import numpy as np
 import datasets
 from huggingface_hub import hf_hub_download
+from PIL import Image
 
 
 UNET_TARGET_REPLACE_MODULE_TRANSFORMER = [
@@ -103,7 +105,43 @@ class LoRAModule(nn.Module):
         return self.org_forward(x) +\
             (x@((self.proj@self.v1.T)).T)@(((self.proj@self.v2.T)))*self.multiplier*self.scale
 
+### basic inference to generate images conditioned on text prompts
+@torch.no_grad
+def inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale, noise_scheduler, ddim_steps, seed, generator, device):
+    generator = generator.manual_seed(seed)
+    latents = torch.randn(
+        (1, unet.in_channels, 512 // 8, 512 // 8),
+        generator = generator,
+        device = device
+    ).bfloat16()
+   
 
+    text_input = tokenizer(prompt, padding="max_length", max_length=tokenizer.model_max_length, truncation=True, return_tensors="pt")
+
+    text_embeddings = text_encoder(text_input.input_ids.to(device))[0]
+
+    max_length = text_input.input_ids.shape[-1]
+    uncond_input = tokenizer(
+                            [negative_prompt], padding="max_length", max_length=max_length, return_tensors="pt"
+                        )
+    uncond_embeddings = text_encoder(uncond_input.input_ids.to(device))[0]
+    text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
+    noise_scheduler.set_timesteps(ddim_steps) 
+    latents = latents * noise_scheduler.init_noise_sigma
+    
+    for i,t in enumerate(tqdm.tqdm(noise_scheduler.timesteps)):
+        latent_model_input = torch.cat([latents] * 2)
+        latent_model_input = noise_scheduler.scale_model_input(latent_model_input, timestep=t)
+        with network:
+            noise_pred = unet(latent_model_input, t, encoder_hidden_states=text_embeddings, timestep_cond= None).sample
+        #guidance
+        noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+        noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+        latents = noise_scheduler.step(noise_pred, t, latents).prev_sample
+    
+    latents = 1 / 0.18215 * latents
+    image = vae.decode(latents).sample
+    image = (image / 2 + 0.5).clamp(0, 1)
 
 class LoRAw2w(nn.Module):
     def __init__(
@@ -303,6 +341,9 @@ class LoRAw2w(nn.Module):
         for lora in self.unet_loras:
             lora.multiplier = 0
             
+def load_models(path:str)->tuple:
+    pipe=DiffusionPipeline.from_pretrained(path).to(device)
+    return pipe.unet.to(device), pipe.vae.to(device), pipe.text_encoder.to(device), pipe.tokenizer,pipe.scheduler
             
 if __name__=="__main__":
     v_path=hf_hub_download("snap-research/weights2weights",
@@ -310,5 +351,32 @@ if __name__=="__main__":
     v = torch.load(v_path)
     #proj = torch.load("../files/proj_1000pc.pt")
     proj=torch.tensor([np.random.normal()]*1000)
-    unet=DiffusionPipeline.from_pretrained("SimianLuo/LCM_Dreamshaper_v7").unet
-    LoRAw2w(proj,v,unet)
+    path="SimianLuo/LCM_Dreamshaper_v7"
+    unet=DiffusionPipeline.from_pretrained(path).unet
+    network=LoRAw2w(proj,v,unet)
+    unet, vae, text_encoder, tokenizer,scheduler =load_models(path)
+    
+    prompt = "sks person" 
+    negative_prompt = "low quality, blurry, unfinished, cartoon" 
+    batch_size = 1
+    height = 128
+    width = 128
+    guidance_scale = 3.0
+    seed = 5
+    ddim_steps = 10
+    device=device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # random seed generator
+    generator = torch.Generator(device=device)
+    
+    
+
+    #run inference
+    image = inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device)
+
+    ### display image
+    image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
+    image = Image.fromarray((image * 255).round().astype("uint8"))
+    
+    image.save("test.png")
+    
+    
