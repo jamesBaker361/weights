@@ -109,10 +109,10 @@ class LoRAModule(nn.Module):
 @torch.no_grad
 def inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale,
               noise_scheduler, ddim_steps, seed, generator,
-              device,dtype):
+              device,dtype,size:int=512,):
     generator = generator.manual_seed(seed)
     latents = torch.randn(
-        (1, unet.in_channels, 512 // 8, 512 // 8),
+        (1, unet.in_channels, size // 8, size // 8),
         generator = generator,
         device = device
     ).to(dtype)
@@ -354,36 +354,37 @@ if __name__=="__main__":
                            filename="files/V.pt")
     v = torch.load(v_path)
     #proj = torch.load("../files/proj_1000pc.pt")
-    proj=torch.tensor([np.random.normal()]*1000)
-    path="SimianLuo/LCM_Dreamshaper_v7"
-    unet=DiffusionPipeline.from_pretrained(path).unet
-    network=LoRAw2w(proj,v,unet)
-    
-    
-    prompt = "sks person" 
-    negative_prompt = "low quality, blurry, unfinished, cartoon" 
-    batch_size = 1
-    height = 128
-    width = 128
-    guidance_scale = 3.0
-    seed = 5
-    ddim_steps = 10
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # random seed generator
-    generator = torch.Generator(device=device)
-    dtype=torch.float16
-    unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device,dtype)
-    
-    
+    for x in range(10):
+        proj=torch.tensor([np.random.normal()]*1000)
+        path="SimianLuo/LCM_Dreamshaper_v7"
+        unet=DiffusionPipeline.from_pretrained(path).unet
+        network=LoRAw2w(proj,v,unet)
+        
+        
+        prompt = "sks person" 
+        negative_prompt = "low quality, blurry, unfinished, cartoon" 
+        batch_size = 1
+        height = 128
+        width = 128
+        guidance_scale = 3.0
+        seed = 5
+        ddim_steps = 10
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # random seed generator
+        generator = torch.Generator(device=device)
+        dtype=torch.float16
+        unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device,dtype)
+        
+        
 
-    #run inference
-    image = inference(network, unet, vae, text_encoder, tokenizer, prompt,
-                      negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,dtype)
+        #run inference
+        image = inference(network, unet, vae, text_encoder, tokenizer, prompt,
+                        negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,dtype)
 
-    ### display image
-    image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
-    image = Image.fromarray((image * 255).round().astype("uint8"))
-    
-    image.save("test.png")
+        ### display image
+        image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
+        image = Image.fromarray((image * 255).round().astype("uint8"))
+        
+        image.save(f"test_{x}.png")
     
     

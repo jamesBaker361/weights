@@ -5,6 +5,7 @@ from datasets import load_dataset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import json
+from huggingface_hub import hf_hub_download
 
 import torch
 import accelerate
@@ -26,6 +27,8 @@ from data_helpers import WeightsDataset
 from torch.utils.data import random_split, DataLoader
 from models import LinearEncoder
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
+from inference_helpers import infer_proj
+from lora_w2w import LoRAw2w,inference,load_models
 
 from transformers import AutoProcessor, CLIPModel
 try:
@@ -52,6 +55,7 @@ parser.add_argument("--batch_size",type=int,default=4)
 parser.add_argument("--save_dir",type=str,default="weights")
 parser.add_argument("--load_hf",action="store_true")
 parser.add_argument("--val_interval",type=int,default=20)
+parser.add_argument("--dim",type=int,default=256)
 
 
 def main(args):
@@ -246,6 +250,9 @@ def main(args):
 
         #test loop
         with torch.no_grad():
+            v_path=hf_hub_download("snap-research/weights2weights",
+                           filename="files/V.pt")
+            v = torch.load(v_path)
             test_loss=0.0
             loss_buffer=[]
             start=time.time()
@@ -276,6 +283,32 @@ def main(args):
             end=time.time()
             accelerator.print(f"test epoch elapsed {end-start} seconds ")
             
+            latents=infer_proj(denoiser,scheduler,"",input_dim)
+            
+            for p,proj in enumerate( latents):
+                path="SimianLuo/LCM_Dreamshaper_v7"
+                unet=DiffusionPipeline.from_pretrained(path).unet
+                network=LoRAw2w(proj,v,unet)
+                
+                unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device,torch_dtype)
+                
+                prompt="sks person"
+                negative_prompt="blurry, ugly"
+                ddim_steps=10,
+                seed=123
+                guidance_scale=3.0
+                
+                image = inference(network, unet, vae, text_encoder, tokenizer, prompt,
+                        negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,torch_dtype,args.dim)
+                
+                image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
+                image = Image.fromarray((image * 255).round().astype("uint8"))
+                
+                accelerator.log({
+                    f"image_{p}":wandb.Image(image)
+                })
+                
+                
         
 
 

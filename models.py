@@ -34,7 +34,6 @@ class LinearEncoder(Module):
             x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t).unsqueeze(1)
             x=attention(x,_t,_t)[0]
-            print(x)
 
 
         for layer,attention,time_emb in zip(self.up_block_list,self.up_attention_list,self.up_time_emb_list):
