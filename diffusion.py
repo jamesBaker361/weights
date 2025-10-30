@@ -124,7 +124,7 @@ def main(args):
         if args.denoiser=="linear":
             denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
             
-        denoiser=denoiser.to(device=device,dtype=torch_dtype)
+        denoiser=denoiser.to(device=device) #,dtype=torch_dtype)
 
         params=[p for p in denoiser.parameters()]
         optimizer=torch.optim.AdamW(params,args.lr)
@@ -178,9 +178,9 @@ def main(args):
 
                 with accelerator.accumulate(params):
                     
-                    batch=batch["weights"].to(device,torch_dtype)
+                    batch=batch["weights"].to(device) #,torch_dtype)
                     batch=batch.unsqueeze(1)
-                    t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+                    t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
                     noise=torch.randn_like(batch)
 
                     noised=scheduler.add_noise(batch,noise,t.long())
@@ -222,9 +222,9 @@ def main(args):
                 start=time.time()
                 with torch.no_grad():
                     for b,batch in enumerate(val_loader):
-                        batch=batch["weights"].to(device,torch_dtype)
+                        batch=batch["weights"].to(device) #,torch_dtype)
                         batch=batch.unsqueeze(1)
-                        t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+                        t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
                         noise=torch.randn_like(batch)
 
                         noised=scheduler.add_noise(batch,noise,t.long())
@@ -261,7 +261,7 @@ def main(args):
             for b,batch in enumerate(val_loader):
                 batch=batch["weights"].to(device,torch_dtype)
                 batch=batch.unsqueeze(1)
-                t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+                t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
                 noise=torch.randn_like(batch)
 
                 noised=scheduler.add_noise(batch,noise,t.long())
@@ -285,14 +285,14 @@ def main(args):
             end=time.time()
             accelerator.print(f"test epoch elapsed {end-start} seconds ")
             
-            latents=infer_proj(denoiser,scheduler,"",input_dim,device=device,dtype=torch_dtype)
+            latents=infer_proj(denoiser,scheduler,"",input_dim,device=device) #,dtype=torch_dtype)
             
             for p,proj in enumerate( latents):
                 path="SimianLuo/LCM_Dreamshaper_v7"
                 unet=DiffusionPipeline.from_pretrained(path).unet
                 network=LoRAw2w(proj,v,unet)
                 
-                unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device,torch_dtype)
+                unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device ) #,torch_dtype)
                 
                 prompt="sks person"
                 negative_prompt="blurry, ugly"
