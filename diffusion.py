@@ -92,8 +92,8 @@ def main(args):
             dataset=WeightsDataset()
             
 
-        test_size=len(dataset)*0.1
-        train_size=len(dataset)-(test_size *2)
+        test_size=int(len(dataset)*0.1)
+        train_size=int(len(dataset)-(test_size *2))
 
         
         # Set seed for reproducibility
