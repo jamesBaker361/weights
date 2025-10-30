@@ -123,6 +123,8 @@ def main(args):
 
         if args.denoiser=="linear":
             denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
+            
+        denoiser=denoiser.to(device=device,dtype=torch_dtype)
 
         params=[p for p in denoiser.parameters()]
         optimizer=torch.optim.AdamW(params,args.lr)
