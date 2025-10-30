@@ -8,10 +8,11 @@ def infer_proj(denoiser:torch.nn.Module,
                text_prompt:str,
                dim_proj:int,
                device="cpu",
+               dtype=torch.float32,
                num_inference_steps:int =10,
                n_samples:int=1,):
     
-    noise=torch.randn([n_samples,dim_proj])
+    noise=torch.randn([n_samples,dim_proj],device=device,dtype=dtype)
     
     # 4. Prepare timesteps
     timesteps, num_inference_steps = retrieve_timesteps(
