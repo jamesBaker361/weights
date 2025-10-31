@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import json
 from huggingface_hub import hf_hub_download
+from transformers import AutoTokenizer, CLIPTextModel
 
 import torch
 import accelerate
@@ -145,6 +146,8 @@ def main(args):
         accelerator.print(e)
 
     state_dict=denoiser.state_dict()
+    text_model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
+    clip_tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
 
 
     def save(state_dict:dict,e:int):
@@ -178,6 +181,12 @@ def main(args):
                 
             batch=batch["weights"].to(device) #,torch_dtype)
             batch=batch.unsqueeze(1)
+            text_str=batch["labels"]
+            
+            clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
+
+            outputs = text_model(**clip_inputs)
+            last_hidden_state = outputs.last_hidden_state
             t=torch.randint(0,len(scheduler),(len(batch),),device=device)#.to(dtype=batch.dtype) #,dtype=torch_dtype) #.long()
             noise=torch.randn_like(batch)
 
@@ -306,7 +315,7 @@ def main(args):
             unet=DiffusionPipeline.from_pretrained(path).unet
             network=LoRAw2w(proj,v,unet)
             
-            unet, vae, text_encoder, tokenizer,scheduler =load_models(path,device ,torch_dtype)
+            unet, vae, text_encoder, clip_tokenizer,scheduler =load_models(path,device ,torch_dtype)
             
             prompt="sks person"
             negative_prompt="blurry, ugly"
@@ -314,7 +323,7 @@ def main(args):
             seed=123
             guidance_scale=3.0
             
-            image = inference(network, unet, vae, text_encoder, tokenizer, prompt,
+            image = inference(network, unet, vae, text_encoder, clip_tokenizer, prompt,
                     negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,torch_dtype,args.dim)
             
             image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
