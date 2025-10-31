@@ -236,6 +236,9 @@ def main(args):
                     noise=torch.randn_like(batch)
 
                     noised=scheduler.add_noise(batch,noise,t.long())
+                    
+                    t=t.to(dtype=batch.dtype)
+                    noised=noised.to(batch.dtype)
 
                     #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
 
@@ -273,6 +276,9 @@ def main(args):
             noise=torch.randn_like(batch)
 
             noised=scheduler.add_noise(batch,noise,t.long())
+            
+            t=t.to(dtype=batch.dtype)
+            noised=noised.to(batch.dtype)
 
             #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
 
