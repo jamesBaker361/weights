@@ -191,16 +191,17 @@ def main(args):
 
                 loss=F.mse_loss(batch.float(),predicted.float())
 
-                avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
-                train_loss += avg_loss.item() / args.gradient_accumulation_steps
+            avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
+            train_loss += avg_loss.item() / args.gradient_accumulation_steps
 
-                loss_buffer.append(loss.detach().cpu().detach())
+            loss_buffer.append(loss.detach().cpu().detach())
 
-                accelerator.backward(loss)
-                '''if accelerator.sync_gradients:
-                    params_to_clip = lora_layers
-                    accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)'''
-                optimizer.step()
+            accelerator.backward(loss)
+            '''if accelerator.sync_gradients:
+                params_to_clip = lora_layers
+                accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)'''
+            optimizer.step()
+            optimizer.zero_grad()
                 #lr_scheduler.step()
                 
 
