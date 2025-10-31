@@ -70,25 +70,39 @@ class LinearEncoderText(Module):
             Linear(int(embedding_dim + (step*k)),int(embedding_dim+(step*(k+1))))
               for k in range(n_layers)])
         self.up_attention_list=ModuleList([MultiheadAttention(int(embedding_dim+(step*(k+1))),1) for k in range(n_layers)])
+        self.up_text_attention_list=ModuleList([MultiheadAttention(int(input_dim+(step*(k+1))),1) for k in range(n_layers)])
         self.up_time_emb_list=ModuleList([Linear(1, int(embedding_dim+(step*(k+1)))) for k in range(n_layers)])
+        self.up_text_emb_list=ModuleList([Linear(text_dim, int(embedding_dim+(step*(k+1)))) for k in range(n_layers)])
         self.droput=Dropout1d()
 
-    def forward(self,x,t):
+    def forward(self,x,t,text):
         self.res_list=[]
-        for layer,attention,time_emb in zip(self.down_block_list,self.down_attention_list, self.down_time_emb_list):
+        for layer,attention,time_emb,text_attention,text_emb in zip(self.down_block_list,
+                                            self.down_attention_list, 
+                                            self.down_time_emb_list,
+                                            self.down_text_attention_list,
+                                            self.down_text_emb_list):
             x=layer(x)
             x=self.droput(x)
             x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t).unsqueeze(1)
             x=attention(x,_t,_t)[0]
+            _text=text_emb(text)
+            x=text_attention(x,_text,_text)[0]
 
 
-        for layer,attention,time_emb in zip(self.up_block_list,self.up_attention_list,self.up_time_emb_list):
+        for layer,attention,time_emb in zip(self.up_block_list,
+                                            self.up_attention_list,
+                                            self.up_time_emb_list,
+                                            self.up_text_attention_list,
+                                            self.up_text_emb_list):
             x=layer(x)
             #x=self.droput(x)
             x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t).unsqueeze(1)
             x=attention(x,_t,_t)[0]
+            _text=text_emb(text)
+            x=text_attention(x,_text,_text)[0]
 
         return x
 
