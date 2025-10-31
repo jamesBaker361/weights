@@ -26,7 +26,7 @@ from torchvision.transforms.v2 import functional as F_v2
 from torchmetrics.image.fid import FrechetInceptionDistance
 from data_helpers import WeightsDataset
 from torch.utils.data import random_split, DataLoader
-from models import LinearEncoder
+from models import LinearEncoder,LinearEncoderText
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 from inference_helpers import infer_proj
 from lora_w2w import LoRAw2w,inference,load_models
@@ -121,9 +121,17 @@ def main(args):
         break
 
     input_dim=batch["weights"].size()[-1]
+    
+    clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
+    outputs = text_model(**clip_inputs)
+    last_hidden_state = outputs.last_hidden_state
+    
+    accelerator.print("last hidden state",last_hidden_state.size()[-1])
 
     if args.denoiser=="linear":
         denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
+    elif args.denoiser=="linear_text":
+        denoiser=LinearEncoderText(args.n_layers,args.embedding_dim_internal,input_dim,)
         
     denoiser=denoiser.to(device=device) #,dtype=torch_dtype)
 
@@ -186,7 +194,7 @@ def main(args):
             clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
 
             outputs = text_model(**clip_inputs)
-            last_hidden_state = outputs.last_hidden_state
+            last_hidden_state = outputs.last_hidden_state.to(device)
             t=torch.randint(0,len(scheduler),(len(batch),),device=device)#.to(dtype=batch.dtype) #,dtype=torch_dtype) #.long()
             noise=torch.randn_like(batch)
 
@@ -203,7 +211,7 @@ def main(args):
                 #with accelerator.autocast():
             with accelerator.accumulate(params):
                 with accelerator.autocast():
-                    predicted=denoiser(noised,t.unsqueeze(-1))
+                    predicted=denoiser(noised,t.unsqueeze(-1),last_hidden_state)
 
                     loss=F.mse_loss(batch.float(),predicted.float())
 
