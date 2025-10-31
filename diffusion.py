@@ -92,6 +92,9 @@ def main(args):
     if args.mode=="pca":
         dataset=WeightsDataset()
         
+    text_model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
+    clip_tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+        
 
     test_size=int(len(dataset)*0.1)
     train_size=int(len(dataset)-(test_size *2))
@@ -154,9 +157,6 @@ def main(args):
         accelerator.print(e)
 
     state_dict=denoiser.state_dict()
-    text_model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
-    clip_tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
-
 
     def save(state_dict:dict,e:int):
         #state_dict=???
