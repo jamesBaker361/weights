@@ -185,8 +185,9 @@ def main(args):
             t=t.to(dtype=batch.dtype)
             noised=noised.to(batch.dtype)
             
-            accelerator.print("t",t.device,t.dtype)
-            accelerator.print("noised",noised.device, noised.dtype)
+            if b==0 and e==0:
+                accelerator.print("t",t.device,t.dtype)
+                accelerator.print("noised",noised.device, noised.dtype)
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
                 
