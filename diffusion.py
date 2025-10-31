@@ -124,7 +124,7 @@ def main(args):
     if args.denoiser=="linear":
         denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
         
-    denoiser=denoiser.to(device=device) #,dtype=torch_dtype)
+    denoiser=denoiser.to(device=device,dtype=torch_dtype)
 
     params=[p for p in denoiser.parameters()]
     optimizer=torch.optim.AdamW(params,args.lr)
@@ -178,20 +178,20 @@ def main(args):
 
             with accelerator.accumulate(params):
                 
-                batch=batch["weights"].to(device) #,torch_dtype)
+                batch=batch["weights"].to(device,torch_dtype)
                 batch=batch.unsqueeze(1)
-                t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
+                t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
                 noise=torch.randn_like(batch)
 
                 noised=scheduler.add_noise(batch,noise,t.long())
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
                 
-                with accelerator.autocast():
+                #with accelerator.autocast():
 
-                    predicted=denoiser(noised,t.unsqueeze(-1))
+                predicted=denoiser(noised,t.unsqueeze(-1))
 
-                    loss=F.mse_loss(batch.float(),predicted.float())
+                loss=F.mse_loss(batch.float(),predicted.float())
 
                 avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
                 train_loss += avg_loss.item() / args.gradient_accumulation_steps
