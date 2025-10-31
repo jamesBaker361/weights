@@ -185,7 +185,7 @@ def main(args):
             t=t.to(dtype=batch.dtype)
             noised=noised.to(batch.dtype)
             
-            if b==0 and e==0:
+            if b==0 and e==start_epoch:
                 accelerator.print("t",t.device,t.dtype)
                 accelerator.print("noised",noised.device, noised.dtype)
 
