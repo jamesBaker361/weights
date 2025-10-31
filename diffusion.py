@@ -175,20 +175,18 @@ def main(args):
         for b,batch in enumerate(train_loader):
             if b==args.limit:
                 break
-
-            with accelerator.accumulate(params):
                 
-                batch=batch["weights"].to(device,torch_dtype)
-                batch=batch.unsqueeze(1)
-                t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
-                noise=torch.randn_like(batch)
+            batch=batch["weights"].to(device,torch_dtype)
+            batch=batch.unsqueeze(1)
+            t=torch.randint(0,len(scheduler),(len(batch),),device=device,dtype=torch_dtype) #.long()
+            noise=torch.randn_like(batch)
 
-                noised=scheduler.add_noise(batch,noise,t.long())
+            noised=scheduler.add_noise(batch,noise,t.long())
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
                 
                 #with accelerator.autocast():
-
+            with accelerator.accumulate(params):
                 predicted=denoiser(noised,t.unsqueeze(-1))
 
                 loss=F.mse_loss(batch.float(),predicted.float())
@@ -204,7 +202,7 @@ def main(args):
                     accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)'''
                 optimizer.step()
                 #lr_scheduler.step()
-                optimizer.zero_grad()
+                
 
             if accelerator.sync_gradients:
                 accelerator.log({"train_loss": train_loss},)
