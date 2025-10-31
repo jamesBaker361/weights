@@ -24,6 +24,9 @@ def infer_proj(denoiser:torch.nn.Module,
     for i, t in enumerate(timesteps):
         latent_model_input = scheduler.scale_model_input(latents, t)
         
+        if i==0:
+            print("t",t.size(),t.dtype)
+        
         noise_pred = denoiser(latent_model_input,t)[0]
         
         latents = scheduler.step(noise_pred, t, latents, return_dict=False)[0]
