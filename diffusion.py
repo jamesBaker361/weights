@@ -184,6 +184,9 @@ def main(args):
             noised=scheduler.add_noise(batch,noise,t.long())
             t=t.to(dtype=batch.dtype)
             noised=noised.to(batch.dtype)
+            
+            accelerator.print("t",t.device,t.dtype)
+            accelerator.print("noised",noised.device, noised.dtype)
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
                 
