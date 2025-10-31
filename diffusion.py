@@ -178,10 +178,11 @@ def main(args):
                 
             batch=batch["weights"].to(device) #,torch_dtype)
             batch=batch.unsqueeze(1)
-            t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
+            t=torch.randint(0,len(scheduler),(len(batch),),device=device)#.to(dtype=batch.dtype) #,dtype=torch_dtype) #.long()
             noise=torch.randn_like(batch)
 
             noised=scheduler.add_noise(batch,noise,t.long())
+            t=t.to(dtype=batch.dtype)
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
                 
