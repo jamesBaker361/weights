@@ -125,7 +125,7 @@ def main(args):
 
     input_dim=batch["weights"].size()[-1]
     
-    clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
+    clip_inputs = clip_tokenizer("text", padding=True, return_tensors="pt")
     outputs = text_model(**clip_inputs)
     last_hidden_state = outputs.last_hidden_state
     
@@ -187,20 +187,21 @@ def main(args):
             if b==args.limit:
                 break
                 
-            batch=batch["weights"].to(device) #,torch_dtype)
-            batch=batch.unsqueeze(1)
             text_str=batch["labels"]
+            weights=batch["weights"].to(device) #,torch_dtype)
+            weights=weights.unsqueeze(1)
+            
             
             clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
 
             outputs = text_model(**clip_inputs)
             last_hidden_state = outputs.last_hidden_state.to(device)
-            t=torch.randint(0,len(scheduler),(len(batch),),device=device)#.to(dtype=batch.dtype) #,dtype=torch_dtype) #.long()
-            noise=torch.randn_like(batch)
+            t=torch.randint(0,len(scheduler),(len(weights),),device=device)#.to(dtype=batch.dtype) #,dtype=torch_dtype) #.long()
+            noise=torch.randn_like(weights)
 
-            noised=scheduler.add_noise(batch,noise,t.long())
-            t=t.to(dtype=batch.dtype)
-            noised=noised.to(batch.dtype)
+            noised=scheduler.add_noise(weights,noise,t.long())
+            t=t.to(dtype=weights.dtype)
+            noised=noised.to(weights.dtype)
             
             if b==0 and e==start_epoch:
                 accelerator.print("t",t.device,t.dtype)
@@ -213,7 +214,7 @@ def main(args):
                 with accelerator.autocast():
                     predicted=denoiser(noised,t.unsqueeze(-1),last_hidden_state)
 
-                    loss=F.mse_loss(batch.float(),predicted.float())
+                    loss=F.mse_loss(noise.float(),predicted.float())
 
                 avg_loss = accelerator.gather(loss.repeat(args.batch_size)).mean()
                 train_loss += avg_loss.item() / args.gradient_accumulation_steps
