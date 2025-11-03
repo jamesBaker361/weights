@@ -205,7 +205,7 @@ def main(args):
             noised=noised.to(weights.dtype)
             
             if b==0 and e==start_epoch:
-                accelerator.print("t",t.device,t.dtype)
+                accelerator.print("t",t.device,t.dtype,t.size())
                 accelerator.print("noised",noised.device, noised.dtype)
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
