@@ -32,7 +32,7 @@ def infer_proj(denoiser:torch.nn.Module,
             print("t",t.size(),t.dtype,t,t.device)
         
         
-        noise_pred = denoiser(latent_model_input,t)[0]
+        noise_pred = denoiser(latent_model_input,t,)[0]
         
         latents = scheduler.step(noise_pred, t, latents, return_dict=False)[0]
         

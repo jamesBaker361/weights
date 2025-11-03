@@ -33,6 +33,7 @@ class LinearEncoder(Module):
             x=self.droput(x)
             x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t).unsqueeze(1)
+            print("_t",_t.size())
             x=attention(x,_t,_t)[0]
 
 
