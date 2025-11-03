@@ -288,7 +288,7 @@ def main(args):
         test_loss=0.0
         loss_buffer=[]
         start=time.time()
-        for b,batch in enumerate(val_loader):
+        for b,batch in enumerate(test_loader):
             batch=batch["weights"].to(device) #,torch_dtype)
             batch=batch.unsqueeze(1)
             t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
@@ -321,7 +321,11 @@ def main(args):
         
         latents=infer_proj(denoiser,scheduler,"",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
         
+        accelerator.print("latents from infer proj",latents.size())
+        
         for p,proj in enumerate( latents):
+            if p==0:
+                accelerator.print("proj",proj.size())
             path="SimianLuo/LCM_Dreamshaper_v7"
             unet=DiffusionPipeline.from_pretrained(path).unet
             network=LoRAw2w(proj,v,unet)
