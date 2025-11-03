@@ -101,7 +101,7 @@ def main(args):
 
     
     # Set seed for reproducibility
-    generator = torch.Generator(device=device).manual_seed(42)
+    generator = torch.Generator().manual_seed(42)
 
     # Split the dataset
     train_dataset, test_dataset,val_dataset = random_split(dataset, [train_size, test_size,test_size], generator=generator)
@@ -317,6 +317,7 @@ def main(args):
         })
         end=time.time()
         accelerator.print(f"test epoch elapsed {end-start} seconds ")
+        generator = torch.Generator(device=device).manual_seed(42)
         
         latents=infer_proj(denoiser,scheduler,"",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
         
