@@ -101,7 +101,7 @@ def main(args):
 
     
     # Set seed for reproducibility
-    generator = torch.Generator().manual_seed(42)
+    generator = torch.Generator(device=device).manual_seed(42)
 
     # Split the dataset
     train_dataset, test_dataset,val_dataset = random_split(dataset, [train_size, test_size,test_size], generator=generator)
