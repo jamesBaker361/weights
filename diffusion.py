@@ -330,7 +330,7 @@ def main(args):
             
             prompt="sks person"
             negative_prompt="blurry, ugly"
-            ddim_steps=10,
+            ddim_steps=10
             seed=123
             guidance_scale=3.0
             
