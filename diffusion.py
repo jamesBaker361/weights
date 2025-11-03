@@ -206,7 +206,7 @@ def main(args):
             
             if b==0 and e==start_epoch:
                 accelerator.print("t",t.device,t.dtype,t.size())
-                accelerator.print("noised",noised.device, noised.dtype)
+                accelerator.print("noised",noised.device, noised.dtype,noised.size())
 
                 #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
                 
