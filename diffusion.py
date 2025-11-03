@@ -318,7 +318,7 @@ def main(args):
         end=time.time()
         accelerator.print(f"test epoch elapsed {end-start} seconds ")
         
-        latents=infer_proj(denoiser,scheduler,"",input_dim,device=device,dtype=torch_dtype)
+        latents=infer_proj(denoiser,scheduler,"",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
         
         for p,proj in enumerate( latents):
             path="SimianLuo/LCM_Dreamshaper_v7"
