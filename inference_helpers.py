@@ -30,6 +30,7 @@ def infer_proj(denoiser:torch.nn.Module,
         t=torch.tensor([t]*n_samples).unsqueeze(-1).to(device,latents.dtype)
         if i==0:
             print("t",t.size(),t.dtype,t,t.device)
+            print("latent model ",latent_model_input.size())
         
         
         noise_pred = denoiser(latent_model_input,t,)[0]
