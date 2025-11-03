@@ -126,15 +126,16 @@ def main(args):
     input_dim=batch["weights"].size()[-1]
     
     clip_inputs = clip_tokenizer("text", padding=True, return_tensors="pt")
+    clip_inputs = clip_tokenizer(["sample text"], padding=True, return_tensors="pt")
     outputs = text_model(**clip_inputs)
     last_hidden_state = outputs.last_hidden_state
-    
-    accelerator.print("last hidden state",last_hidden_state.size()[-1])
+    text_dim=last_hidden_state.size()[-1]
+    accelerator.print("last hidden state",text_dim)
 
     if args.denoiser=="linear":
         denoiser=LinearEncoder(args.n_layers,args.embedding_dim_internal,input_dim)
     elif args.denoiser=="linear_text":
-        denoiser=LinearEncoderText(args.n_layers,args.embedding_dim_internal,input_dim,)
+        denoiser=LinearEncoderText(args.n_layers,args.embedding_dim_internal,input_dim,text_dim)
         
     denoiser=denoiser.to(device=device) #,dtype=torch_dtype)
 

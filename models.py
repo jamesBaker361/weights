@@ -54,6 +54,7 @@ class LinearEncoderText(Module):
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_layers=n_layers
+        self.text_dim=text_dim
         self.embedding_dim=embedding_dim
         step=(input_dim-embedding_dim)/self.n_layers
         #self.residual=residual
