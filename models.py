@@ -63,16 +63,16 @@ class LinearEncoderText(Module):
         self.down_block_list=ModuleList([
             Linear(int(input_dim - (step*k)),int(input_dim-(step*(k+1))))
               for k in range(n_layers)])
-        self.down_attention_list=ModuleList([MultiheadAttention(int(input_dim-(step*(k+1))),1) for k in range(n_layers)])
-        self.down_text_attention_list=ModuleList([MultiheadAttention(int(input_dim-(step*(k+1))),1) for k in range(n_layers)])
+        self.down_attention_list=ModuleList([MultiheadAttention(int(input_dim-(step*(k+1))),1, batch_first=True) for k in range(n_layers)])
+        self.down_text_attention_list=ModuleList([MultiheadAttention(int(input_dim-(step*(k+1))),1,batch_first=True) for k in range(n_layers)])
         self.down_time_emb_list=ModuleList([Linear(1, int(input_dim-(step*(k+1)))) for k in range(n_layers)])
         self.down_text_emb_list=ModuleList([Linear(text_dim, int(input_dim-(step*(k+1)))) for k in range(n_layers)])
 
         self.up_block_list=ModuleList([
             Linear(int(embedding_dim + (step*k)),int(embedding_dim+(step*(k+1))))
               for k in range(n_layers)])
-        self.up_attention_list=ModuleList([MultiheadAttention(int(embedding_dim+(step*(k+1))),1) for k in range(n_layers)])
-        self.up_text_attention_list=ModuleList([MultiheadAttention(int(input_dim+(step*(k+1))),1) for k in range(n_layers)])
+        self.up_attention_list=ModuleList([MultiheadAttention(int(embedding_dim+(step*(k+1))),1,batch_first=True) for k in range(n_layers)])
+        self.up_text_attention_list=ModuleList([MultiheadAttention(int(input_dim+(step*(k+1))),1,batch_first=True) for k in range(n_layers)])
         self.up_time_emb_list=ModuleList([Linear(1, int(embedding_dim+(step*(k+1)))) for k in range(n_layers)])
         self.up_text_emb_list=ModuleList([Linear(text_dim, int(embedding_dim+(step*(k+1)))) for k in range(n_layers)])
         self.droput=Dropout1d()
