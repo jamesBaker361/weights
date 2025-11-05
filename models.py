@@ -95,7 +95,7 @@ class LinearEncoderText(Module):
             x=text_attention(x,_text,_text)[0]
 
 
-        for layer,attention,time_emb in zip(self.up_block_list,
+        for layer,attention,time_emb,text_attention,text_emb in zip(self.up_block_list,
                                             self.up_attention_list,
                                             self.up_time_emb_list,
                                             self.up_text_attention_list,
