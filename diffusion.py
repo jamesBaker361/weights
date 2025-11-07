@@ -1,6 +1,7 @@
 import os
 import argparse
 from experiment_helpers.gpu_details import print_details
+from experiment_helpers.saving import save_state_dict
 from datasets import load_dataset
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -41,11 +42,10 @@ from huggingface_hub import create_repo,HfApi
 
 parser=argparse.ArgumentParser()
 parser.add_argument("--mixed_precision",type=str,default="fp16")
-parser.add_argument("--project_name",type=str,default="person")
+parser.add_argument("--project_name",type=str,default="weights")
 parser.add_argument("--gradient_accumulation_steps",type=int,default=4)
 parser.add_argument("--name",type=str,default="jlbaker361/model",help="name on hf")
 parser.add_argument("--lr",type=float,default=0.0001)
-parser.add_argument("--src_dataset",type=str,default="jlbaker361/idgaf")
 parser.add_argument("--mode",type=str,default="pca",help="pca or vae")
 parser.add_argument("--denoiser",type=str,default="linear")
 parser.add_argument("--embedding_dim_internal",type=int,default=1024)
