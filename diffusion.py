@@ -181,7 +181,7 @@ def main(args):
             accelerator.print("failed to upload")
             accelerator.print(e)
             
-    def inference(label:str,seed:int=42):
+    def inference(label:str,seed:int=42,scheduler:DDIMScheduler=scheduler,accelerator:Accelerator=accelerator):
         generator = torch.Generator(device=device).manual_seed(seed)
         
         latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
