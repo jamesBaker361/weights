@@ -330,7 +330,7 @@ def main(args):
         accelerator.print(f"test epoch elapsed {end-start} seconds ")
         generator = torch.Generator(device=device).manual_seed(42)
         
-        latents=infer_proj(denoiser,scheduler,"",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
+        latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
         
         accelerator.print("latents from infer proj",latents.size())
         
