@@ -181,7 +181,11 @@ def main(args):
             accelerator.print("failed to upload")
             accelerator.print(e)
             
-    def inference(label:str,seed:int=42,scheduler:DDIMScheduler=scheduler,accelerator:Accelerator=accelerator):
+    v_path=hf_hub_download("snap-research/weights2weights",
+                        filename="files/V.pt")
+    v = torch.load(v_path)
+            
+    def inference(label:str,seed:int=42,scheduler:DDIMScheduler=scheduler,accelerator:Accelerator=accelerator,v=v):
         generator = torch.Generator(device=device).manual_seed(seed)
         
         latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
@@ -324,9 +328,7 @@ def main(args):
 
     #test loop
     with torch.no_grad():
-        v_path=hf_hub_download("snap-research/weights2weights",
-                        filename="files/V.pt")
-        v = torch.load(v_path)
+        
         test_loss=0.0
         loss_buffer=[]
         start=time.time()
