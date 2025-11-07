@@ -66,6 +66,7 @@ def main(args):
     device=accelerator.device
     state = PartialState()
     accelerator.print(f"Rank {state.process_index} initialized successfully")
+    scheduler=DDIMScheduler()
     if accelerator.is_main_process or state.num_processes==1:
         accelerator.print(f"main process = {state.process_index}")
     if accelerator.is_main_process or state.num_processes==1:
@@ -141,7 +142,7 @@ def main(args):
 
     params=[p for p in denoiser.parameters()]
     optimizer=torch.optim.AdamW(params,args.lr)
-    scheduler=DDIMScheduler()
+    
 
     denoiser,optimizer,train_loader,test_loader,scheduler= accelerator.prepare(denoiser,optimizer,train_loader,test_loader,scheduler)
 
