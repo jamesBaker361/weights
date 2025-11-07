@@ -179,6 +179,38 @@ def main(args):
         except Exception as e:
             accelerator.print("failed to upload")
             accelerator.print(e)
+            
+    def inference(label:str,seed:int=42):
+        generator = torch.Generator(device=device).manual_seed(seed)
+        
+        latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
+        
+        accelerator.print("latents from infer proj",latents.size())
+        
+        for p,proj in enumerate( latents):
+            if p==0:
+                accelerator.print("proj",proj.size())
+            path="SimianLuo/LCM_Dreamshaper_v7"
+            unet=DiffusionPipeline.from_pretrained(path).unet
+            network=LoRAw2w(proj,v,unet)
+            
+            unet, vae, text_encoder, clip_tokenizer,scheduler =load_models(path,device ,torch_dtype)
+            
+            prompt="sks person"
+            negative_prompt="blurry, ugly"
+            ddim_steps=10
+            seed=123
+            guidance_scale=3.0
+            
+            image = inference(network, unet, vae, text_encoder, clip_tokenizer, prompt,
+                    negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,torch_dtype,args.dim)
+            
+            image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
+            image = Image.fromarray((image * 255).round().astype("uint8"))
+            
+            accelerator.log({
+                f"{label}_image_{p}":wandb.Image(image)
+            })
 
     for e in range(start_epoch,args.epochs+1):
         start=time.time()
@@ -284,7 +316,7 @@ def main(args):
                 })
                 end=time.time()
                 accelerator.print(f"validation epoch {e} elapsed {end-start} seconds ")
-                    
+                inference("val",e)        
                     
 
     #test loop
@@ -328,36 +360,8 @@ def main(args):
         })
         end=time.time()
         accelerator.print(f"test epoch elapsed {end-start} seconds ")
-        generator = torch.Generator(device=device).manual_seed(42)
+        inference("test")
         
-        latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
-        
-        accelerator.print("latents from infer proj",latents.size())
-        
-        for p,proj in enumerate( latents):
-            if p==0:
-                accelerator.print("proj",proj.size())
-            path="SimianLuo/LCM_Dreamshaper_v7"
-            unet=DiffusionPipeline.from_pretrained(path).unet
-            network=LoRAw2w(proj,v,unet)
-            
-            unet, vae, text_encoder, clip_tokenizer,scheduler =load_models(path,device ,torch_dtype)
-            
-            prompt="sks person"
-            negative_prompt="blurry, ugly"
-            ddim_steps=10
-            seed=123
-            guidance_scale=3.0
-            
-            image = inference(network, unet, vae, text_encoder, clip_tokenizer, prompt,
-                    negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,torch_dtype,args.dim)
-            
-            image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
-            image = Image.fromarray((image * 255).round().astype("uint8"))
-            
-            accelerator.log({
-                f"image_{p}":wandb.Image(image)
-            })
                 
                 
         
