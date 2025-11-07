@@ -188,15 +188,15 @@ def main(args):
             if b==args.limit:
                 break
                 
-            text_str=batch["labels"]
+            
             weights=batch["weights"].to(device) #,torch_dtype)
             weights=weights.unsqueeze(1)
             
-            
+            text_str=batch["labels"]
             clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
-
             outputs = text_model(**clip_inputs)
             last_hidden_state = outputs.last_hidden_state.to(device)
+            
             t=torch.randint(0,len(scheduler),(len(weights),),device=device)#.to(dtype=batch.dtype) #,dtype=torch_dtype) #.long()
             noise=torch.randn_like(weights)
 
@@ -214,6 +214,7 @@ def main(args):
             with accelerator.accumulate(params):
                 with accelerator.autocast():
                     predicted=denoiser(noised,t.unsqueeze(-1),last_hidden_state)
+                        
 
                     loss=F.mse_loss(noise.float(),predicted.float())
 
@@ -249,10 +250,16 @@ def main(args):
             start=time.time()
             with torch.no_grad():
                 for b,batch in enumerate(val_loader):
+                    text_str=batch["labels"]
+                    clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
+                    outputs = text_model(**clip_inputs)
+                    last_hidden_state = outputs.last_hidden_state.to(device)
                     batch=batch["weights"].to(device) #,torch_dtype)
                     batch=batch.unsqueeze(1)
                     t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
                     noise=torch.randn_like(batch)
+                    
+                    
 
                     noised=scheduler.add_noise(batch,noise,t.long())
                     
@@ -261,7 +268,7 @@ def main(args):
 
                     #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
 
-                    predicted=denoiser(noised,t.unsqueeze(-1))
+                    predicted=denoiser(noised,t.unsqueeze(-1),last_hidden_state)
 
                     loss=F.mse_loss(batch.float(),predicted.float())
 
@@ -289,6 +296,10 @@ def main(args):
         loss_buffer=[]
         start=time.time()
         for b,batch in enumerate(test_loader):
+            text_str=batch["labels"]
+            clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
+            outputs = text_model(**clip_inputs)
+            last_hidden_state = outputs.last_hidden_state.to(device)
             batch=batch["weights"].to(device) #,torch_dtype)
             batch=batch.unsqueeze(1)
             t=torch.randint(0,len(scheduler),(len(batch),),device=device) #,dtype=torch_dtype) #.long()
@@ -301,7 +312,7 @@ def main(args):
 
             #accelerator.print("t, noise, noised ",t.size(),noise.size(),noised.size())
 
-            predicted=denoiser(noised,t.unsqueeze(-1))
+            predicted=denoiser(noised,t.unsqueeze(-1),last_hidden_state)
 
             loss=F.mse_loss(batch.float(),predicted.float())
 
