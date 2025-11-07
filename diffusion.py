@@ -282,6 +282,8 @@ def main(args):
             start=time.time()
             with torch.no_grad():
                 for b,batch in enumerate(val_loader):
+                    if b==args.limit:
+                        break
                     text_str=batch["labels"]
                     clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
                     outputs = text_model(**clip_inputs)
@@ -328,6 +330,8 @@ def main(args):
         loss_buffer=[]
         start=time.time()
         for b,batch in enumerate(test_loader):
+            if b==args.limit:
+                break
             text_str=batch["labels"]
             clip_inputs = clip_tokenizer(text_str, padding=True, return_tensors="pt")
             outputs = text_model(**clip_inputs)
