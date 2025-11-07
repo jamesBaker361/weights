@@ -88,10 +88,10 @@ class LinearEncoderText(Module):
             x=self.droput(x)
             x=torch.nn.LeakyReLU()(x)
             _t=time_emb(t).unsqueeze(1)
-            print("_t size ",_t.size())
+            #print("_t size ",_t.size())
             x=attention(x,_t,_t)[0]
             _text=text_emb(text)
-            print("_text ",_text.size())
+            #print("_text ",_text.size())
             x=text_attention(x,_text,_text)[0]
 
 
