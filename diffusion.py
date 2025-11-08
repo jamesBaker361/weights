@@ -30,7 +30,7 @@ from torch.utils.data import random_split, DataLoader
 from models import LinearEncoder,LinearEncoderText
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 from inference_helpers import infer_proj
-from lora_w2w import LoRAw2w,inference,load_models
+from lora_w2w import LoRAw2w,basic_inference,load_models
 
 from transformers import AutoProcessor, CLIPModel
 try:
@@ -207,7 +207,7 @@ def main(args):
             seed=123
             guidance_scale=3.0
             
-            image = inference(network, unet, vae, text_encoder, clip_tokenizer, prompt,
+            image = basic_inference(network, unet, vae, text_encoder, clip_tokenizer, prompt,
                     negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,torch_dtype,args.dim)
             
             image = image.detach().cpu().float().permute(0, 2, 3, 1).numpy()[0]
