@@ -107,7 +107,7 @@ class LoRAModule(nn.Module):
 
 ### basic inference to generate images conditioned on text prompts
 @torch.no_grad
-def inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale,
+def basic_inference(network, unet, vae, text_encoder, tokenizer, prompt, negative_prompt, guidance_scale,
               noise_scheduler, ddim_steps, seed, generator,
               device,dtype,size:int=512,):
     generator = generator.manual_seed(seed)
