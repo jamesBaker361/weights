@@ -378,7 +378,7 @@ if __name__=="__main__":
         
 
         #run inference
-        image = inference(network, unet, vae, text_encoder, tokenizer, prompt,
+        image = basic_inference(network, unet, vae, text_encoder, tokenizer, prompt,
                         negative_prompt, guidance_scale, scheduler, ddim_steps, seed, generator, device,dtype)
 
         ### display image
