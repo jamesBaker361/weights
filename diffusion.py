@@ -90,8 +90,11 @@ def main(args):
         "bf16":torch.bfloat16
     }[args.mixed_precision]
 
-    if args.mode=="pca":
-        dataset=WeightsDataset()
+    #if args.mode=="pca":
+    dataset=WeightsDataset()
+    mean=dataset.mean
+    std=dataset.std    
+        
         
     text_model = CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32")
     clip_tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
@@ -184,11 +187,14 @@ def main(args):
     v_path=hf_hub_download("snap-research/weights2weights",
                         filename="files/V.pt")
     v = torch.load(v_path)
+    
             
     def inference(label:str,seed:int=42,scheduler:DDIMScheduler=scheduler,accelerator:Accelerator=accelerator,v=v):
         generator = torch.Generator(device=device).manual_seed(seed)
         
-        latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,device=device,dtype=torch_dtype)
+        latents=infer_proj(denoiser,scheduler,"sks person",input_dim,accelerator=accelerator,
+                           mean=mean,std=std,
+                           device=device,dtype=torch_dtype)
         
         accelerator.print("latents from infer proj",latents.size())
         

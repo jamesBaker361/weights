@@ -26,6 +26,12 @@ class WeightsDataset(Dataset):
 
 
         self.data_tensor=torch.load(file_path,map_location="cpu")
+        
+        self.mean = self.data_tensor.mean(dim=0, keepdim=True)
+        self.std = self.data_tensor.std(dim=0, keepdim=True, unbiased=False)  # set unbiased=False for population std
+        
+        self.data_tensor=(self.data_tensor-self.mean)/self.std
+
 
         label_file_path=hf_hub_download(
         repo_id="snap-research/weights2weights",
