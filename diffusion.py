@@ -261,9 +261,8 @@ def main(args):
                 loss_buffer.append(loss.detach().cpu().detach())
 
                 accelerator.backward(loss)
-                '''if accelerator.sync_gradients:
-                    params_to_clip = lora_layers
-                    accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)'''
+                if accelerator.sync_gradients:
+                    accelerator.clip_grad_norm_(params, 1.0)
                 optimizer.step()
                 optimizer.zero_grad()
                 #lr_scheduler.step()
